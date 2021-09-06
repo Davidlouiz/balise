@@ -1,0 +1,84 @@
+<html>
+    <head>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <style type="text/css">
+            .info {
+                font-size: 27vh;
+                text-align: right;
+                font-family: Arial, Helvetica, sans-serif;
+                font-weight: 700;
+            }
+
+            .direction {
+                color: #00f;
+            }
+
+            .vent_moyen {
+                color: #00f;
+            }
+
+            .vent_max {
+                color: #f00;
+            }
+
+            table {
+                margin: auto;
+            }
+
+            td {
+                text-align :center;
+            }
+        </style>
+    </head>
+
+    <body>
+        <table>
+            <tr>
+                <td><span class="info direction" id='direction'></span></td>
+            </tr>
+            <tr>    
+                <td><span class="info vent_moyen" id='vitesse_moyenne'></span></td>
+            </tr>
+            <tr>    
+                <td><span class="info vent_max" id='vitesse_max'></span></td>
+            </tr>
+        </table>
+    </body>
+
+    <script>
+        function angle_to_direction(angle) {
+            var direction = [
+                'N', 'NNE', 'NE', 'ENE',
+                'E', 'ESE', 'SE', 'SSE',
+                'S', 'SSO', 'SO', 'OSO',
+                'O', 'ONO', 'NO', 'NNO'
+            ];
+            return direction[Math.floor(angle/22.5)];
+        }
+
+        function get_wind(id_balise) {
+            $.getJSON('https://balisemeteo.com/balise_json.php?idBalise=' + id_balise, function(data) {
+                $("#direction").text(angle_to_direction(data['directVentMoy']) + ' - ' + data['directVentMoy'] + '°');
+                $("#vitesse_moyenne").text(data['vitesseVentMoy'] + ' ' + data['unitVent']);
+                $("#vitesse_max").text(data['vitesseVentMax'] + ' ' + data['unitVent']);
+            });
+        }
+
+        get_wind(158); // Balise de Commes
+
+        function on_position_detected(latitude, longitude) {
+            // Ici, detecter la balise la plus proche
+
+            // Récupérer son id
+
+            // get_wind(id_balise);
+        }
+
+        //if ("geolocation" in navigator) {
+        //    navigator.geolocation.getCurrentPosition(function(position) {
+        //        on_position_detected(position.coords.latitude, position.coords.longitude);
+        //    });
+        //}
+
+    </script>
+</html>
