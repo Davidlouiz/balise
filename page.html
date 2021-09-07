@@ -55,22 +55,49 @@
             return direction[Math.round(angle/22.5)];
         }
 
-        function get_wind(id_balise) {
-            $.getJSON('https://balisemeteo.com/balise_json.php?idBalise=' + id_balise, function(data) {
+        function get_wind(balise) {
+            $.getJSON('https://balisemeteo.com/balise_json.php?idBalise=' + balise.idBalise, function(data) {
                 $("#direction").text(angle_to_direction(data['directVentMoy']) + ' - ' + data['directVentMoy'] + '°');
                 $("#vitesse_moyenne").text(data['vitesseVentMoy'] + ' ' + data['unitVent']);
-                $("#vitesse_max").text(data['vitesseVentMax'] + ' ' + data['unitVent']);
+                $("#vitesse_max").text(data['vitesseVentMax'] + ' ' + data['unitVent'] + ' ' + getUrlParameter('lat'));
             });
         }
 
-        get_wind(158); // Balise de Commes
+        // Source : https://www.1formatik.com/2417/comment-calculer-distance-latitude-longitude-javascript
+        function distance(lat1, lon1, lat2, lon2, unit) {
+            if ((lat1 == lat2) && (lon1 == lon2)) {
+                return 0;
+            } else {
+                var radlat1 = Math.PI * lat1/180;
+                var radlat2 = Math.PI * lat2/180;
+                var theta = lon1-lon2;
+                var radtheta = Math.PI * theta/180;
+                var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+                if (dist > 1) {
+                    dist = 1;
+                }
+                dist = Math.acos(dist);
+                dist = dist * 180/Math.PI;
+                dist = dist * 60 * 1.1515;
+                if (unit=="K") { dist = dist * 1.609344 }
+                if (unit=="N") { dist = dist * 0.8684 }
+                return dist;
+            }
+        }
 
-        function on_position_detected(latitude, longitude) {
-            // Ici, detecter la balise la plus proche
-
-            // Récupérer son id
-
-            // get_wind(id_balise);
+        function afficher_balise_proche(latitude, longitude) {
+            $.getJSON('https://data.ffvl.fr/json/balises.json', function(balises) {
+                var distance_min = 20038;
+                var balise_proche = 0;
+                for (var balise of balises) {
+                    var distance_balise = distance(latitude, longitude, balise.latitude, balise.longitude, 'K');
+                    if (distance_balise < distance_min) {
+                        distance_min = distance_balise;
+                        balise_proche = balise
+                    }
+                }
+                get_wind(balise_proche);
+            });
         }
         
         function getUrlParameter(sParam) {
@@ -80,25 +107,20 @@
             i;
 
             for (i = 0; i < sURLVariables.length; i++) {
-            sParameterName = sURLVariables[i].split('=');
+                sParameterName = sURLVariables[i].split('=');
 
                 if (sParameterName[0] === sParam) {
                     return typeof sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
                 }
             }
-        return false;
+            return false;
         };
         
         //Example : 
         //URL à renseigner dans le widget xctrack : http://test.com/page.html?lat=${lat}&lng=${lng}
-        //var lat = getUrlParameter('lat');
-        //var lng = getUrlParameter('lng');
-
-        //if ("geolocation" in navigator) {
-        //    navigator.geolocation.getCurrentPosition(function(position) {
-        //        on_position_detected(position.coords.latitude, position.coords.longitude);
-        //    });
-        //}
+        var lat = getUrlParameter('lat');
+        var lng = getUrlParameter('lng');
+        afficher_balise_proche(lat, lng);
 
     </script>
 </html>
