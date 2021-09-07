@@ -4,7 +4,6 @@
         <style type="text/css">
             .info {
                 font-size: 27vh;
-                text-align: right;
                 font-family: Arial, Helvetica, sans-serif;
                 font-weight: 700;
             }
@@ -53,7 +52,7 @@
                 'S', 'SSO', 'SO', 'OSO',
                 'O', 'ONO', 'NO', 'NNO'
             ];
-            return direction[Math.floor(angle/22.5)];
+            return direction[Math.round(angle/22.5)];
         }
 
         function get_wind(id_balise) {
