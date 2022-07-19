@@ -78,6 +78,209 @@
     </body>
 
     <script>
+        class Sensor {
+            constructor (summary_informations) {
+            }
+
+            latitude() {
+                throw new Error('latitude() must be overloaded');
+            }
+            longitude() {
+                throw new Error('longitude() must be overloaded');
+            }
+            async wind_speed_avg() {
+                throw new Error('async wind_speed_avg() must be overloaded');
+            }
+            async wind_speed_min() {
+                throw new Error('async wind_speed_min() must be overloaded');
+            }
+            async wind_speed_max() {
+                throw new Error('async wind_speed_max() must be overloaded');
+            }
+            async wind_heading() {
+                throw new Error('async wind_heading() must be overloaded');
+            }
+            preload_informations() {
+                throw new Error('preload_informations() must be overloaded');
+            }
+            date() {
+                throw new Error('date() must be overloaded');
+            }
+            type() {
+                throw new Error('type() must be overloaded');
+            }
+            async cardinal() {
+                var cardinal_points = [
+                    'N', 'NNE', 'NE', 'ENE',
+                    'E', 'ESE', 'SE', 'SSE',
+                    'S', 'SSO', 'SO', 'OSO',
+                    'O', 'ONO', 'NO', 'NNO'
+                ];
+                let angle = await this.wind_heading();
+                return cardinal_points[Math.round(angle/22.5)];
+            }
+        }
+
+        class FFVLSensor extends Sensor {
+            constructor (summary_informations) {
+                super();
+                this.summary_informations = summary_informations;
+            }
+
+            latitude() {
+                return parseFloat(this.summary_informations['latitude']);
+            }
+            longitude() {
+                return parseFloat(this.summary_informations['longitude']);
+            }
+            preload_informations() {
+                if (this.informations_loaded) {
+                    return;
+                }
+                let id = this.summary_informations['idBalise']
+                this.informations_loaded = fetch('https://balisemeteo.com/balise_json.php?idBalise=' + id)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network error')
+                        }
+                        return response.json();
+                    })
+                    .then(results => {
+                        this.informations = results;
+                    });
+            }
+            async wind_speed_avg() {
+                this.preload_informations();
+                await this.informations_loaded;
+                return parseFloat(this.informations['vitesseVentMoy']);
+            }
+            async wind_speed_min() {
+                this.preload_informations();
+                await this.informations_loaded;
+                return parseFloat(this.informations['vitesseVentMin']);
+            }
+            async wind_speed_max() {
+                this.preload_informations();
+                await this.informations_loaded;
+                return parseFloat(this.informations['vitesseVentMax']);
+            }
+            async wind_heading() {
+                this.preload_informations();
+                await this.informations_loaded;
+                return parseFloat(this.informations['directVentMoy']);
+            }
+            async date() {
+                this.preload_informations();
+                await this.informations_loaded;
+                return new Date(this.informations['dateIso']);
+            }
+            type() {
+                return 'FFVL';
+            }
+        }
+
+        class PioupiouSensor extends Sensor {
+            constructor (summary_informations) {
+                super();
+                this.informations = summary_informations;
+            }
+
+            latitude() {
+                return this.informations['location']['latitude'];
+            }
+            longitude() {
+                return this.informations['location']['longitude'];
+            }
+            async wind_speed_avg() {
+                return this.informations['measurements']['wind_speed_avg'];
+            }
+            async wind_speed_min() {
+                return this.informations['measurements']['wind_speed_min'];
+            }
+            async wind_speed_max() {
+                return this.informations['measurements']['wind_speed_max'];
+            }
+            async wind_heading() {
+                return this.informations['measurements']['wind_heading'];
+            }
+            async date() {
+                return new Date(this.informations['measurements']['date']);
+            }
+            preload_informations() {
+            }
+            type() {
+                return 'Pioupiou';
+            }
+        }
+
+        class Sensors {
+            constructor() {
+                this.sensors = [];
+
+                // Load FFVL Summary informations
+                this.summary_ffvl = fetch('https://data.ffvl.fr/json/balises.json')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network error')
+                        }
+                        return response.json();
+                    })
+                    .then(results => {
+                        results.forEach(summary_informations => {
+                            this.sensors.push(new FFVLSensor(summary_informations));
+                        });
+                    })
+                    .catch(error => {
+                        console.log(error);
+                    });
+
+                // Load Pioupiou Summary informations
+                this.summary_pioupiou = fetch('https://api.pioupiou.fr/v1/live/all')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network error')
+                        }
+                        return response.json();
+                    })
+                    .then(results => {
+                        results['data'].forEach(summary_informations => {
+                            this.sensors.push(new PioupiouSensor(summary_informations));
+                        });
+                    })
+                    .catch(error => {
+                        console.log(error);
+                    });
+
+            }
+
+            async all() {
+                await this.summary_ffvl;
+                await this.summary_pioupiou;
+                return this.sensors;
+            }
+        }
+
+        const start = async function () {
+            var sensors = new Sensors();
+            ss = await sensors.all();
+
+            for (s of ss) {
+                s.preload_informations();
+            }
+            for (s of ss) {
+                console.log('GPS : ' + s.latitude() + ' ' + s.longitude());
+                let wind_speed = await s.wind_speed_avg();
+                console.log('Type : ' + s.type());
+                console.log('avg : ' + await s.wind_speed_avg());
+                console.log('min : ' + await s.wind_speed_min());
+                console.log('max : ' + await s.wind_speed_max());
+                console.log('heading : ' + await s.wind_heading());
+                console.log('cardinal : ' + await s.cardinal());
+                console.log('date : ' + await s.date());
+            }
+        }
+        //start();
+
         function angle_to_direction(angle) {
             var direction = [
                 'N', 'NNE', 'NE', 'ENE',
