@@ -88,6 +88,32 @@
             longitude() {
                 throw new Error('longitude() must be overloaded');
             }
+            name() {
+                throw new Error('name() must be overloaded');
+            }
+            distance(latitude, longitude) {
+                let lat1 = latitude;
+                let lon1 = longitude;
+                let lat2 = this.latitude();
+                let lon2 = this.longitude();
+                if ((lat1 == lat2) && (lon1 == lon2)) {
+                    return 0;
+                } else {
+                    var radlat1 = Math.PI * lat1/180;
+                    var radlat2 = Math.PI * lat2/180;
+                    var theta = lon1-lon2;
+                    var radtheta = Math.PI * theta/180;
+                    var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+                    if (dist > 1) {
+                        dist = 1;
+                    }
+                    dist = Math.acos(dist);
+                    dist = dist * 180/Math.PI;
+                    dist = dist * 60 * 1.1515;
+                    dist *= 1.609344;
+                    return dist;
+                }
+            }
             async wind_speed_avg() {
                 throw new Error('async wind_speed_avg() must be overloaded');
             }
@@ -132,6 +158,9 @@
             }
             longitude() {
                 return parseFloat(this.summary_informations['longitude']);
+            }
+            name() {
+                return this.summary_informations['nom'];
             }
             preload_informations() {
                 if (this.informations_loaded) {
@@ -190,6 +219,9 @@
             }
             longitude() {
                 return this.informations['location']['longitude'];
+            }
+            name() {
+                return this.informations['meta']['name'];
             }
             async wind_speed_avg() {
                 return this.informations['measurements']['wind_speed_avg'];
@@ -258,28 +290,38 @@
                 await this.summary_pioupiou;
                 return this.sensors;
             }
+
+            async near(latitude, longitude, km, nmax) {
+                let sensors = [];
+                for (let sensor of await this.all()) {
+                    if (sensor.distance(latitude, longitude) <= km) {
+                        sensors.push(sensor);
+                    }
+                }
+                // TODO nmax
+                return sensors;
+            }
         }
 
         const start = async function () {
             var sensors = new Sensors();
-            ss = await sensors.all();
+            ss = await sensors.near(49.276437, -0.703140, 100, 1000);
 
             for (s of ss) {
-                s.preload_informations();
-            }
-            for (s of ss) {
-                console.log('GPS : ' + s.latitude() + ' ' + s.longitude());
-                let wind_speed = await s.wind_speed_avg();
-                console.log('Type : ' + s.type());
-                console.log('avg : ' + await s.wind_speed_avg());
-                console.log('min : ' + await s.wind_speed_min());
-                console.log('max : ' + await s.wind_speed_max());
-                console.log('heading : ' + await s.wind_heading());
-                console.log('cardinal : ' + await s.cardinal());
-                console.log('date : ' + await s.date());
+                    console.log('Name : ' + s.name());
+                    console.log('GPS : ' + s.latitude() + ' ' + s.longitude());
+                    let wind_speed = await s.wind_speed_avg();
+                    console.log('Type : ' + s.type());
+                    console.log('avg : ' + await s.wind_speed_avg());
+                    console.log('min : ' + await s.wind_speed_min());
+                    console.log('max : ' + await s.wind_speed_max());
+                    console.log('heading : ' + await s.wind_heading());
+                    console.log('cardinal : ' + await s.cardinal());
+                    console.log('date : ' + await s.date());
+                    console.log('distance : ' + s.distance(49.276437, -0.703140));
             }
         }
-        //start();
+        start();
 
         function angle_to_direction(angle) {
             var direction = [
