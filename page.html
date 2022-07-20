@@ -178,20 +178,34 @@
                         this.informations = results;
                     });
             }
+            kmh(speed, unit) {
+                if (unit == 'km/h') {
+                    return speed;
+                } else if (unit == 'Noeud(s)') {
+                    return speed * 1.852;
+                }
+                throw new Error('Unknown unit: "' + unit + '"');
+            }
             async wind_speed_avg() {
                 this.preload_informations();
                 await this.informations_loaded;
-                return parseFloat(this.informations['vitesseVentMoy']);
+                let speed = parseFloat(this.informations['vitesseVentMoy']);
+                let unit = this.informations['unitVent'];
+                return this.kmh(speed, unit);
             }
             async wind_speed_min() {
                 this.preload_informations();
                 await this.informations_loaded;
-                return parseFloat(this.informations['vitesseVentMin']);
+                let speed = parseFloat(this.informations['vitesseVentMin']);
+                let unit = this.informations['unitVent'];
+                return this.kmh(speed, unit);
             }
             async wind_speed_max() {
                 this.preload_informations();
                 await this.informations_loaded;
-                return parseFloat(this.informations['vitesseVentMax']);
+                let speed = parseFloat(this.informations['vitesseVentMax']);
+                let unit = this.informations['unitVent'];
+                return this.kmh(speed, unit);
             }
             async wind_heading() {
                 this.preload_informations();
