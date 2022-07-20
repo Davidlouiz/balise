@@ -110,7 +110,7 @@
                     dist = Math.acos(dist);
                     dist = dist * 180/Math.PI;
                     dist = dist * 60 * 1.1515;
-                    dist *= 1.609344;
+                    dist *= 1.609344; // km/mile
                     return dist;
                 }
             }
@@ -312,27 +312,29 @@
                         sensors.push(sensor);
                     }
                 }
-                // TODO nmax
+                const sorter = (a, b) => a.distance(latitude, longitude) - b.distance(latitude, longitude);
+                sensors.sort(sorter); // about 10 ms
+                sensors = sensors.slice(0, nmax);
                 return sensors;
             }
         }
 
         const start = async function () {
             var sensors = new Sensors();
-            ss = await sensors.near(49.276437, -0.703140, 100, 1000);
+            ss = await sensors.near(49.276437, -0.703140, 50, 5);
 
             for (s of ss) {
                     console.log('Name : ' + s.name());
-                    console.log('GPS : ' + s.latitude() + ' ' + s.longitude());
-                    let wind_speed = await s.wind_speed_avg();
-                    console.log('Type : ' + s.type());
-                    console.log('avg : ' + await s.wind_speed_avg());
-                    console.log('min : ' + await s.wind_speed_min());
-                    console.log('max : ' + await s.wind_speed_max());
-                    console.log('heading : ' + await s.wind_heading());
-                    console.log('cardinal : ' + await s.cardinal());
-                    console.log('date : ' + await s.date());
-                    console.log('distance : ' + s.distance(49.276437, -0.703140));
+                    //console.log('GPS : ' + s.latitude() + ' ' + s.longitude());
+                    //let wind_speed = await s.wind_speed_avg();
+                    //console.log('Type : ' + s.type());
+                    //console.log('avg : ' + await s.wind_speed_avg());
+                    //console.log('min : ' + await s.wind_speed_min());
+                    //console.log('max : ' + await s.wind_speed_max());
+                    //console.log('heading : ' + await s.wind_heading());
+                    //console.log('cardinal : ' + await s.cardinal());
+                    //console.log('date : ' + await s.date());
+                    //console.log('distance : ' + s.distance(49.276437, -0.703140));
             }
         }
         start();
